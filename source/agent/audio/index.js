@@ -118,7 +118,7 @@ module.exports = function (rpcClient, selfRpcId, parentRpcId, clusterWorkerIP) {
 
         // FIXME: The supported codec list should be a sub-list of those querried from the engine
         // and filterred out according to config.
-        supported_codecs = ['pcmu', 'opus_48000_2', 'pcma', 'ilbc', 'isac_16000', 'isac_32000', 'g722_16000_1', 'g722_16000_2', 'aac', 'aac_48000_2', 'ac3', 'nellymoser'];
+        supported_codecs = ['pcmu', 'opus_48000_2', 'pcma', 'ilbc', 'isac_16000', 'isac_32000', 'g722_16000_1', 'g722_16000_2', 'aac', 'aac_48000_2', 'aac_44100_2', 'aac_32000_2', 'ac3', 'nellymoser'];
 
         log.debug('AudioMixer.init OK');
         callback('callback', {codecs: supported_codecs});
@@ -285,16 +285,18 @@ module.exports = function (rpcClient, selfRpcId, parentRpcId, clusterWorkerIP) {
 
     that.init = function (service, config, belongToRoom, controller, mixView, callback) {
         var audioConfig = global.config.audio || {};
-        log.debug('init, audioConfig:', audioConfig);
+        log.debug('init, global audioConfig:', audioConfig);
 
         if (service === 'mixing') {
             if (typeof config === 'object') {
                 // Merge media mixing audio property
                 audioConfig = Object.assign(audioConfig, config);
             }
+            log.debug('init, audioConfig:', audioConfig);
             view = mixView;
             initEngine(audioConfig, belongToRoom, controller, callback);
         } else if (service === 'transcoding') {
+            log.debug('init, audioConfig:', audioConfig);
             initEngine(audioConfig, belongToRoom, controller, callback);
         } else {
             log.error('Unknown service type to init an audio node:', service);
