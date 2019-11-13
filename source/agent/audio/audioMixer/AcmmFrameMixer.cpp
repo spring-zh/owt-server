@@ -470,6 +470,9 @@ void AcmmFrameMixer::updateFrequency()
             maxFreq= freq;
     }
 
+    // if(maxFreq >= 44100)
+        maxFreq = 48000;
+
     if (m_frequency != maxFreq) {
         ret = m_mixerModule->SetMinimumMixingFrequency(convert2Frequency(maxFreq));
         if (ret != 0) {

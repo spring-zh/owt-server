@@ -38,6 +38,8 @@ enum FrameFormat {
 
     FRAME_FORMAT_AAC,           // ignore sample rate and channels for decoder, default is 48000_2
     FRAME_FORMAT_AAC_48000_2,   // specify sample rate and channels for encoder
+    FRAME_FORMAT_AAC_44100_2,   // specify sample rate and channels for encoder
+    FRAME_FORMAT_AAC_32000_2,   // specify sample rate and channels for encoder
 
     FRAME_FORMAT_AC3,
     FRAME_FORMAT_NELLYMOSER,
@@ -111,6 +113,10 @@ inline FrameFormat getFormat(const std::string& codec) {
     } else if (codec.compare(0, 3, "aac") == 0) {
         if (codec == "aac_48000_2")
             return owt_base::FRAME_FORMAT_AAC_48000_2;
+        else if (codec == "aac_44100_2")
+            return owt_base::FRAME_FORMAT_AAC_44100_2;
+        else if (codec == "aac_32000_2")
+            return owt_base::FRAME_FORMAT_AAC_32000_2;
         else
             return owt_base::FRAME_FORMAT_AAC;
     } else if (codec.compare(0, 3, "ac3") == 0) {
@@ -160,6 +166,10 @@ inline const char *getFormatStr(const FrameFormat &format) {
             return "AAC";
         case FRAME_FORMAT_AAC_48000_2:
             return "AAC_48000_2";
+        case FRAME_FORMAT_AAC_44100_2:
+            return "AAC_44100_2";
+        case FRAME_FORMAT_AAC_32000_2:
+            return "AAC_32000_2";
         case FRAME_FORMAT_AC3:
             return "AC3";
         case FRAME_FORMAT_NELLYMOSER:
@@ -181,6 +191,8 @@ inline bool isAudioFrame(const Frame& frame) {
           || frame.format == FRAME_FORMAT_G722_16000_2
           || frame.format == FRAME_FORMAT_AAC
           || frame.format == FRAME_FORMAT_AAC_48000_2
+          || frame.format == FRAME_FORMAT_AAC_44100_2
+          || frame.format == FRAME_FORMAT_AAC_32000_2
           || frame.format == FRAME_FORMAT_AC3
           || frame.format == FRAME_FORMAT_NELLYMOSER;
 }

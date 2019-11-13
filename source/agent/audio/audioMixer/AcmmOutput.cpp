@@ -59,6 +59,12 @@ bool AcmmOutput::addDest(FrameFormat format, FrameDestination* destination)
             case FRAME_FORMAT_AAC_48000_2:
                 m_encoder.reset(new FfEncoder(FRAME_FORMAT_AAC_48000_2));
                 break;
+            case FRAME_FORMAT_AAC_44100_2:
+                m_encoder.reset(new FfEncoder(FRAME_FORMAT_AAC_44100_2));
+                break;
+            case FRAME_FORMAT_AAC_32000_2:
+                m_encoder.reset(new FfEncoder(FRAME_FORMAT_AAC_32000_2));
+                break;
             case FRAME_FORMAT_PCMU:
             case FRAME_FORMAT_PCMA:
             case FRAME_FORMAT_OPUS:

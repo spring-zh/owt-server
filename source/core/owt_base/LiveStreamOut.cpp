@@ -60,6 +60,8 @@ bool LiveStreamOut::isAudioFormatSupported(FrameFormat format)
     switch (format) {
         case owt_base::FRAME_FORMAT_AAC:
         case owt_base::FRAME_FORMAT_AAC_48000_2:
+        case owt_base::FRAME_FORMAT_AAC_44100_2:
+        case owt_base::FRAME_FORMAT_AAC_32000_2:
             return true;
         default:
             return false;

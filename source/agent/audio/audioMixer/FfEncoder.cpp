@@ -35,6 +35,11 @@ FfEncoder::FfEncoder(const FrameFormat format)
     , m_audioEnc(NULL)
     , m_audioFifo(NULL)
     , m_audioFrame(NULL)
+    , m_swrCtx(nullptr)
+    , m_swrSamplesData(nullptr)
+    , m_swrSamplesLinesize(0)
+    , m_swrSamplesCount(0)
+    , m_swrInitialised(false)
 {
     if (ELOG_IS_TRACE_ENABLED())
         av_log_set_level(AV_LOG_DEBUG);
@@ -69,6 +74,8 @@ FfEncoder::~FfEncoder()
         m_audioEnc = NULL;
     }
 
+    destroyResampler();
+
     m_format = FRAME_FORMAT_UNKNOWN;
 }
 
@@ -91,6 +98,8 @@ bool FfEncoder::initEncoder(const FrameFormat format)
 
     switch(format) {
         case FRAME_FORMAT_AAC_48000_2:
+        case FRAME_FORMAT_AAC_44100_2:
+        case FRAME_FORMAT_AAC_32000_2:
             codec = avcodec_find_encoder_by_name("libfdk_aac");
             if (!codec) {
                 ELOG_ERROR_T("Can not find audio encoder %s, please check if ffmpeg/libfdk_aac installed", "libfdk_aac");
@@ -186,28 +195,164 @@ fail:
     return false;
 }
 
+bool FfEncoder::initResampler(enum AVSampleFormat inSampleFormat, int inSampleRate, int inChannels,
+        enum AVSampleFormat outSampleFormat, int outSampleRate, int outChannels)
+{
+    int ret;
+
+    if (inSampleFormat == outSampleFormat && inSampleRate == outSampleRate && inChannels == outChannels) {
+        m_needResample = false;
+        return true;
+    }
+
+    m_needResample = true;
+
+    ELOG_INFO_T("Init resampler %s-%d-%d -> %s-%d-%d"
+            , av_get_sample_fmt_name(inSampleFormat)
+            , inSampleRate
+            , inChannels
+            , av_get_sample_fmt_name(outSampleFormat)
+            , outSampleRate
+            , outChannels
+            );
+
+    m_swrCtx = swr_alloc();
+    if (!m_swrCtx) {
+        ELOG_ERROR_T("Could not allocate resampler context");
+        return false;
+    }
+
+    /* set options */
+    av_opt_set_sample_fmt(m_swrCtx, "in_sample_fmt",      inSampleFormat,       0);
+    av_opt_set_int       (m_swrCtx, "in_sample_rate",     inSampleRate,         0);
+    av_opt_set_int       (m_swrCtx, "in_channel_count",   inChannels,           0);
+    av_opt_set_sample_fmt(m_swrCtx, "out_sample_fmt",     outSampleFormat,    0);
+    av_opt_set_int       (m_swrCtx, "out_sample_rate",    outSampleRate,      0);
+    av_opt_set_int       (m_swrCtx, "out_channel_count",  outChannels,        0);
+
+    ret = swr_init(m_swrCtx);
+    if (ret < 0) {
+        ELOG_ERROR_T("Fail to initialize the resampling context, %s", ff_err2str(ret));
+
+        swr_free(&m_swrCtx);
+        m_swrCtx = NULL;
+        return false;
+    }
+
+    m_swrSamplesCount = 2048;
+    ret = av_samples_alloc_array_and_samples(&m_swrSamplesData, &m_swrSamplesLinesize, outChannels,
+            m_swrSamplesCount, outSampleFormat, 0);
+    if (ret < 0) {
+        ELOG_ERROR_T("Could not allocate swr samples data, %s", ff_err2str(ret));
+
+        swr_free(&m_swrCtx);
+        m_swrCtx = NULL;
+        return false;
+    }
+
+    return true;
+}
+bool FfEncoder::resampleFrame(const AudioFrame* audioFrame, uint8_t **pOutData, int *pOutNbSamples)
+{
+    int ret;
+    int dst_nb_samples;
+
+    if (!m_swrCtx)
+        return false;
+
+    /* compute destination number of samples */
+    dst_nb_samples = av_rescale_rnd(
+            swr_get_delay(m_swrCtx, audioFrame->sample_rate_hz_) + audioFrame->samples_per_channel_
+            , m_sampleRate
+            , audioFrame->sample_rate_hz_
+            , AV_ROUND_UP);
+
+    if (dst_nb_samples > m_swrSamplesCount) {
+        int newSize = 2 * dst_nb_samples;
+
+        ELOG_INFO_T("Realloc audio swr samples buffer %d -> %d", m_swrSamplesCount, newSize);
+
+        av_freep(&m_swrSamplesData[0]);
+        ret = av_samples_alloc(m_swrSamplesData, &m_swrSamplesLinesize, m_channels,
+                newSize, m_audioEnc->sample_fmt, 1);
+        if (ret < 0) {
+            ELOG_ERROR_T("Fail to realloc swr samples, %s", ff_err2str(ret));
+            return false;
+        }
+        m_swrSamplesCount = newSize;
+    }
+
+    /* convert to destination format */
+    uint8_t * frame_data[] = {(uint8_t*)audioFrame->data(), 0, 0};
+    ret = swr_convert(m_swrCtx, m_swrSamplesData, dst_nb_samples, (const uint8_t **)frame_data, audioFrame->samples_per_channel_);
+    if (ret < 0) {
+        ELOG_ERROR_T("Error while converting, %s", ff_err2str(ret));
+        return false;
+    }
+
+    *pOutData       = m_swrSamplesData[0];
+    *pOutNbSamples  = ret;
+    return true;
+}
+void FfEncoder::destroyResampler()
+{
+    if (m_swrCtx) {
+        swr_free(&m_swrCtx);
+        m_swrCtx = NULL;
+    }
+    if (m_swrSamplesData) {
+        av_freep(&m_swrSamplesData[0]);
+        av_freep(&m_swrSamplesData);
+        m_swrSamplesData = NULL;
+
+        m_swrSamplesLinesize = 0;
+    }
+    m_swrSamplesCount = 0;
+}
+
 bool FfEncoder::addToFifo(const AudioFrame* audioFrame)
 {
-    uint32_t n;
+    int n;
 
     if (audioFrame->sample_rate_hz_ != m_sampleRate ||
             (int32_t)audioFrame->num_channels_ != m_channels) {
 
-        ELOG_ERROR_T("Invalid audio frame, %s(%d-%ld), want(%d-%d)",
-                getFormatStr(m_format),
-                audioFrame->sample_rate_hz_,
-                audioFrame->num_channels_,
-                m_sampleRate,
-                m_channels
-                );
-        return false;
+        // ELOG_ERROR_T("Invalid audio frame, %s(%d-%ld), want(%d-%d)",
+        //         getFormatStr(m_format),
+        //         audioFrame->sample_rate_hz_,
+        //         audioFrame->num_channels_,
+        //         m_sampleRate,
+        //         m_channels
+        //         );
+        // return false;
+        if( !m_swrInitialised ){
+            if(!initResampler(AV_SAMPLE_FMT_S16,audioFrame->sample_rate_hz_,audioFrame->num_channels_,
+                m_audioEnc->sample_fmt, m_sampleRate, m_channels)){
+                ELOG_ERROR_T("initResampler failed, %s(%d-%ld), want(%d-%d)",
+                    getFormatStr(m_format),
+                    audioFrame->sample_rate_hz_,
+                    audioFrame->num_channels_,
+                    m_sampleRate,
+                    m_channels
+                    );
+                return false;
+            }
+            m_swrInitialised = true;
+        }
     }
 
-    void *data = reinterpret_cast<void*>((const_cast<int16_t *>(audioFrame->data_)));
+    void *framedata[3] = {0};
+    int writeSamples = 0;
+    if(m_swrInitialised){
+        resampleFrame(audioFrame, (uint8_t **)&framedata[0], &writeSamples);
+    }else {
+        framedata[0] = reinterpret_cast<void*>((const_cast<int16_t *>(audioFrame->data_)));
+        writeSamples = audioFrame->samples_per_channel_;
+    }
 
-    n = av_audio_fifo_write(m_audioFifo, &data, audioFrame->samples_per_channel_);
-    if (n < audioFrame->samples_per_channel_) {
-        ELOG_ERROR("Cannot not write data to fifo, bnSamples %ld, writed %d", audioFrame->samples_per_channel_, n);
+    n = av_audio_fifo_write(m_audioFifo, framedata, writeSamples);
+    if (n < writeSamples) {
+        ELOG_ERROR("Cannot not write data to fifo, bnSamples %d, writed %d", writeSamples, n);
         return false;
     }
 

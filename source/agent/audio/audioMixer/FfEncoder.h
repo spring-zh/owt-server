@@ -23,6 +23,7 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libavutil/time.h>
 #include <libavutil/audio_fifo.h>
+#include <libswresample/swresample.h>
 }
 
 namespace mcu {
@@ -60,6 +61,18 @@ private:
     AVFrame* m_audioFrame;
 
     char m_errbuff[500];
+
+    //
+    bool initResampler(enum AVSampleFormat inSampleFormat, int inSampleRate, int inChannels,
+        enum AVSampleFormat outSampleFormat, int outSampleRate, int outChannels);
+    bool resampleFrame(const AudioFrame* audioFrame, uint8_t **pOutData, int *pOutNbSamples);
+    void destroyResampler();
+    bool m_needResample;
+    struct SwrContext *m_swrCtx;
+    uint8_t **m_swrSamplesData;
+    int m_swrSamplesLinesize;
+    int m_swrSamplesCount;
+    bool m_swrInitialised;
 };
 
 } /* namespace mcu */

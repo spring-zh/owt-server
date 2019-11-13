@@ -137,6 +137,8 @@ bool FfDecoder::initDecoder(FrameFormat format, uint32_t sampleRate, uint32_t ch
     switch(format) {
         case FRAME_FORMAT_AAC:
         case FRAME_FORMAT_AAC_48000_2:
+        case FRAME_FORMAT_AAC_44100_2:
+        case FRAME_FORMAT_AAC_32000_2:
             decId = AV_CODEC_ID_AAC;
             break;
         case FRAME_FORMAT_AC3:

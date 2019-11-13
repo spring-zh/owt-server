@@ -25,6 +25,8 @@ bool MediaFileOut::isAudioFormatSupported(FrameFormat format)
         case FRAME_FORMAT_PCMA:
         case FRAME_FORMAT_AAC:
         case FRAME_FORMAT_AAC_48000_2:
+        case FRAME_FORMAT_AAC_44100_2:
+        case FRAME_FORMAT_AAC_32000_2:
         case FRAME_FORMAT_OPUS:
             return true;
         default:

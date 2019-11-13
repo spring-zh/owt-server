@@ -158,6 +158,10 @@ int32_t getAudioSampleRate(const owt_base::FrameFormat format) {
     switch (format) {
         case owt_base::FRAME_FORMAT_AAC_48000_2:
             return 48000;
+        case owt_base::FRAME_FORMAT_AAC_44100_2:
+            return 44100;
+        case owt_base::FRAME_FORMAT_AAC_32000_2:
+            return 32000;
         case owt_base::FRAME_FORMAT_AAC:
         case owt_base::FRAME_FORMAT_AC3:
         case owt_base::FRAME_FORMAT_NELLYMOSER:
@@ -178,6 +182,8 @@ int32_t getAudioSampleRate(const owt_base::FrameFormat format) {
 uint32_t getAudioChannels(const owt_base::FrameFormat format) {
     switch (format) {
         case owt_base::FRAME_FORMAT_AAC_48000_2:
+        case owt_base::FRAME_FORMAT_AAC_44100_2:
+        case owt_base::FRAME_FORMAT_AAC_32000_2:
             return 2;
         case owt_base::FRAME_FORMAT_AAC:
         case owt_base::FRAME_FORMAT_AC3:

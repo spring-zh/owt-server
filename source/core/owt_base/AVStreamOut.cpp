@@ -24,6 +24,8 @@ inline AVCodecID frameFormat2AVCodecID(int frameFormat)
             return AV_CODEC_ID_OPUS;
         case FRAME_FORMAT_AAC:
         case FRAME_FORMAT_AAC_48000_2:
+        case FRAME_FORMAT_AAC_44100_2:
+        case FRAME_FORMAT_AAC_32000_2:
             return AV_CODEC_ID_AAC;
         default:
             return AV_CODEC_ID_NONE;
@@ -332,6 +334,31 @@ void AVStreamOut::close()
     disconnect();
 }
 
+/** object_type
+ * NULL_VAL = 0,
+ * AAC_MAIN = 1,
+ * AAC_LC   = 2,
+ * AAC_SSR  = 3,
+ * AAC_LTP  = 4,
+ * SBR      = 5,
+ * AAC_SCALABLE = 6, //see ISO/IEC 14496-3 Table 1.17
+ */
+static void write_aac_latm(uint8_t *out_buffer, uint8_t object_type, int sample_rate, uint8_t channel_config){
+    static int sample_rate_table[] = { 96000, 88200, 64000, 48000, 44100, 32000,
+           24000, 22050, 16000, 12000, 11025, 8000, 7350 };
+    uint8_t sample_rate_index = 4;
+    for (uint8_t i = 0; i < sizeof(sample_rate_table)/sizeof(int); i++)
+    {
+        if(sample_rate_table[i] == sample_rate)
+        {
+            sample_rate_index = i;
+            break;
+        }
+    }
+    out_buffer[0] = (object_type << 3) | (sample_rate_index >> 1);
+    out_buffer[1] = ((sample_rate_index & 0x1) <<7 ) | (channel_config << 3);
+}
+
 bool AVStreamOut::addAudioStream(FrameFormat format, uint32_t sampleRate, uint32_t channels)
 {
     enum AVCodecID codec_id = frameFormat2AVCodecID(format);
@@ -351,8 +378,10 @@ bool AVStreamOut::addAudioStream(FrameFormat format, uint32_t sampleRate, uint32
         case AV_CODEC_ID_AAC: //AudioSpecificConfig 48000-2
             par->extradata_size = 2;
             par->extradata      = (uint8_t *)av_malloc(par->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-            par->extradata[0]   = 0x11;
-            par->extradata[1]   = 0x90;
+            // par->extradata[0]   = 0x11;
+            // par->extradata[1]   = 0x90;
+            ELOG_INFO("addAudioStream sampleRate:%d, channels:%d", sampleRate, channels);
+            write_aac_latm(par->extradata,2,sampleRate,channels);
             break;
         case AV_CODEC_ID_OPUS: //OpusHead 48000-2
             par->extradata_size = 19;
