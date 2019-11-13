@@ -403,6 +403,7 @@ function isLibAllowed(libSrc) {
     'libSvtHevcEnc',
     'libusrsctp',
     'libopenh264',
+    "libfdk-aac",
     'libre',
     'sipLib',
   ];
