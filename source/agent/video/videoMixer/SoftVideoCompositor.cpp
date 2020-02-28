@@ -244,7 +244,7 @@ SoftFrameGenerator::SoftFrameGenerator(
             SoftVideoCompositor *owner,
             owt_base::VideoSize &size,
             owt_base::YUVColor &bgColor,
-            const bool crop,
+            const int fitPolicy,
             const uint32_t maxFps,
             const uint32_t minFps)
     : m_clock(Clock::GetRealTimeClock())
@@ -255,7 +255,7 @@ SoftFrameGenerator::SoftFrameGenerator(
     , m_counterMax(0)
     , m_size(size)
     , m_bgColor(bgColor)
-    , m_crop(crop)
+    , m_fitPolicy(fitPolicy)
     , m_configureChanged(false)
     , m_parallelNum(0)
 {
@@ -476,7 +476,7 @@ void SoftFrameGenerator::layout_regions(SoftFrameGenerator *t, rtc::scoped_refpt
         uint32_t src_y;
         uint32_t src_width;
         uint32_t src_height;
-        if (t->m_crop) {
+        if (t->m_fitPolicy == 1) {
             src_width   = std::min((uint32_t)inputBuffer->width(), dst_width * inputBuffer->height() / dst_height);
             src_height  = std::min((uint32_t)inputBuffer->height(), dst_height * inputBuffer->width() / dst_width);
             src_x       = (inputBuffer->width() - src_width) / 2;
@@ -484,7 +484,7 @@ void SoftFrameGenerator::layout_regions(SoftFrameGenerator *t, rtc::scoped_refpt
 
             cropped_dst_width   = dst_width;
             cropped_dst_height  = dst_height;
-        } else {
+        } else if (t->m_fitPolicy == 0) {
             src_width   = inputBuffer->width();
             src_height  = inputBuffer->height();
             src_x       = 0;
@@ -492,6 +492,14 @@ void SoftFrameGenerator::layout_regions(SoftFrameGenerator *t, rtc::scoped_refpt
 
             cropped_dst_width   = std::min(dst_width, inputBuffer->width() * dst_height / inputBuffer->height());
             cropped_dst_height  = std::min(dst_height, inputBuffer->height() * dst_width / inputBuffer->width());
+        } else {
+            src_width   = inputBuffer->width();
+            src_height  = inputBuffer->height();
+            src_x       = 0;
+            src_y       = 0;
+
+            cropped_dst_width   = dst_width;
+            cropped_dst_height  = dst_height;
         }
 
         dst_x += (dst_width - cropped_dst_width) / 2;
@@ -602,7 +610,7 @@ void SoftFrameGenerator::clearText()
 
 DEFINE_LOGGER(SoftVideoCompositor, "mcu.media.SoftVideoCompositor");
 
-SoftVideoCompositor::SoftVideoCompositor(uint32_t maxInput, VideoSize rootSize, YUVColor bgColor, bool crop)
+SoftVideoCompositor::SoftVideoCompositor(uint32_t maxInput, VideoSize rootSize, YUVColor bgColor, int fitPolicy)
     : m_maxInput(maxInput)
 {
     m_inputs.resize(m_maxInput);
@@ -613,8 +621,8 @@ SoftVideoCompositor::SoftVideoCompositor(uint32_t maxInput, VideoSize rootSize, 
     m_avatarManager.reset(new AvatarManager(maxInput));
 
     m_generators.resize(2);
-    m_generators[0].reset(new SoftFrameGenerator(this, rootSize, bgColor, crop, 60, 15));
-    m_generators[1].reset(new SoftFrameGenerator(this, rootSize, bgColor, crop, 48, 6));
+    m_generators[0].reset(new SoftFrameGenerator(this, rootSize, bgColor, fitPolicy, 60, 15));
+    m_generators[1].reset(new SoftFrameGenerator(this, rootSize, bgColor, fitPolicy, 48, 6));
 }
 
 SoftVideoCompositor::~SoftVideoCompositor()

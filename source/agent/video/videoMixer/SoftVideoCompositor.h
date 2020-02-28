@@ -94,7 +94,7 @@ public:
             SoftVideoCompositor *owner,
             owt_base::VideoSize &size,
             owt_base::YUVColor &bgColor,
-            const bool crop,
+            const int fitPolicy,
             const uint32_t maxFps,
             const uint32_t minFps);
 
@@ -135,7 +135,8 @@ private:
     // configure
     owt_base::VideoSize     m_size;
     owt_base::YUVColor      m_bgColor;
-    bool                        m_crop;
+    // bool                        m_crop;
+    int m_fitPolicy;
 
     // reconfifure
     LayoutSolution              m_layout;
@@ -166,7 +167,7 @@ class SoftVideoCompositor : public VideoFrameCompositor {
     friend class SoftFrameGenerator;
 
 public:
-    SoftVideoCompositor(uint32_t maxInput, owt_base::VideoSize rootSize, owt_base::YUVColor bgColor, bool crop);
+    SoftVideoCompositor(uint32_t maxInput, owt_base::VideoSize rootSize, owt_base::YUVColor bgColor, int fitPolicy);
     ~SoftVideoCompositor();
 
     bool activateInput(int input);

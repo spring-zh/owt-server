@@ -18,9 +18,16 @@ namespace mcu {
 
 class VideoFrameMixer;
 
+enum FitPolicy {
+    letterbox = 0,
+    crop = 1,
+    stretch = 2
+};
+
 struct VideoMixerConfig {
     uint32_t maxInput;
     bool crop;
+    FitPolicy fitPolicy;
     std::string resolution;
     struct {
         int r;

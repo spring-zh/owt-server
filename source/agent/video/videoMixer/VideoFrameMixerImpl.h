@@ -55,7 +55,7 @@ private:
 
 class VideoFrameMixerImpl : public VideoFrameMixer {
 public:
-    VideoFrameMixerImpl(uint32_t maxInput, owt_base::VideoSize rootSize, owt_base::YUVColor bgColor, bool useSimulcast, bool crop);
+    VideoFrameMixerImpl(uint32_t maxInput, owt_base::VideoSize rootSize, owt_base::YUVColor bgColor, bool useSimulcast, int fitPolicy);
     ~VideoFrameMixerImpl();
 
     bool addInput(int input, owt_base::FrameFormat, owt_base::FrameSource*, const std::string& avatar);
@@ -102,16 +102,16 @@ private:
     bool m_useSimulcast;
 };
 
-VideoFrameMixerImpl::VideoFrameMixerImpl(uint32_t maxInput, owt_base::VideoSize rootSize, owt_base::YUVColor bgColor, bool useSimulcast, bool crop)
+VideoFrameMixerImpl::VideoFrameMixerImpl(uint32_t maxInput, owt_base::VideoSize rootSize, owt_base::YUVColor bgColor, bool useSimulcast, int fitPolicy)
     : m_useSimulcast(useSimulcast)
 {
 #ifdef ENABLE_MSDK
     if (!m_compositor)
-        m_compositor.reset(new MsdkVideoCompositor(maxInput, rootSize, bgColor, crop));
+        m_compositor.reset(new MsdkVideoCompositor(maxInput, rootSize, bgColor, fitPolicy==1));
 #endif
 
     if (!m_compositor)
-        m_compositor.reset(new SoftVideoCompositor(maxInput, rootSize, bgColor, crop));
+        m_compositor.reset(new SoftVideoCompositor(maxInput, rootSize, bgColor, fitPolicy));
 }
 
 VideoFrameMixerImpl::~VideoFrameMixerImpl()

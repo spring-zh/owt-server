@@ -366,6 +366,7 @@ function VMixer(rpcClient, clusterIP) {
             'backgroundcolor': (typeof videoConfig.bgColor === 'string') ? colorMap[videoConfig.bgColor] : videoConfig.bgColor,
             'layout': videoConfig.layout.templates,
             'crop': (videoConfig.layout.fitPolicy === 'crop' ? true : false),
+            'fitPolicy': videoConfig.layout.fitPolicy,
             'gaccplugin': gaccPluginEnabled,
             'MFE_timeout': MFE_timeout
         };

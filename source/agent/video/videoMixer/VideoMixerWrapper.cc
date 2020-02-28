@@ -47,6 +47,16 @@ void VideoMixer::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
   config.maxInput = options->Get(String::NewFromUtf8(isolate, "maxinput"))->Int32Value();
   config.crop = options->Get(String::NewFromUtf8(isolate, "crop"))->ToBoolean()->BooleanValue();
 
+  Local<Value> fitPolicy = options->Get(String::NewFromUtf8(isolate, "fitPolicy"));
+  config.fitPolicy = mcu::letterbox;
+  if (fitPolicy->IsString()) {
+    std::string strfitPolicy = std::string(*String::Utf8Value(fitPolicy->ToString()));
+    if(strfitPolicy == "crop"){
+      config.fitPolicy = mcu::crop;
+    }else if(strfitPolicy == "stretch")
+      config.fitPolicy = mcu::stretch;
+  }
+
   Local<Value> resolution = options->Get(String::NewFromUtf8(isolate, "resolution"));
   if (resolution->IsString()) {
     config.resolution = std::string(*String::Utf8Value(resolution->ToString()));

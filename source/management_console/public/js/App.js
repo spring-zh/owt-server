@@ -485,7 +485,7 @@ class RoomView extends React.Component {
             )
           ),
           formRow('Layout-FitPolicy',
-            formSelect(['letterbox', 'crop'], 'video.layout.fitPolicy')),
+            formSelect(['letterbox', 'crop', 'stretch'], 'video.layout.fitPolicy')),
           formRow('Layout-BaseTemplate',
             formSelect(['fluid', 'lecture', 'void'], 'video.layout.templates.base')),
           formArea('video.layout.templates.custom')

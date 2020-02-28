@@ -125,7 +125,8 @@ function upgradeRoom(oldConfig) {
     newView.video.parameters.resolution = upgradeResolution(oldMedia.video.resolution);
     newView.video.bgColor = upgradeColor(oldMedia.video.bkColor);
     newView.video.maxInput = oldMedia.video.maxInput;
-    newView.video.layout.fitPolicy = oldMedia.video.crop ? 'crop' : 'letterbox';
+    // newView.video.layout.fitPolicy = oldMedia.video.crop ? 'crop' : 'letterbox';
+    newView.video.layout.fitPolicy = oldMedia.video.fitPolicy;
     newView.video.layout.templates.base = oldMedia.video.layout.base;
     newView.video.layout.templates.custom = upgradeLayoutCustom(oldMedia.video.layout.custom);
 

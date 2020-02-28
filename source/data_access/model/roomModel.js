@@ -83,7 +83,7 @@ var ViewSchema = new Schema({
     keepActiveInputPrimary: { type: Boolean, default: false },
     layout: {
       //TODO: stretched?
-      fitPolicy: { type: String, enum: ['letterbox', 'crop'], default: 'letterbox' },
+      fitPolicy: { type: String, enum: ['letterbox', 'crop', 'stretch'], default: 'letterbox' },
       setRegionEffect: { type: String },
       templates: {
         base: { type: String, enum: ['fluid', 'lecture', 'void'], default: 'fluid' },
