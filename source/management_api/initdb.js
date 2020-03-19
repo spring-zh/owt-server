@@ -185,7 +185,7 @@ function writeConfigFile(superServiceId, superServiceKey) {
       if (err) {
         return console.log(err);
       }
-      data = data.replace(/\ndataBaseURL =[^\n]*\n/, '\ndataBaseURL = "'+dbURL+'"\n');
+      data = data.replace(/\ndataBaseURL =[^\n]*/, '\ndataBaseURL = "'+dbURL+'"\n');
       data = data.replace(/\nsuperserviceID =[^\n]*\n/, '\nsuperserviceID = "'+superServiceId+'"\n');
       fs.writeFile(configFile, data, 'utf8', function (err) {
         if (err) return console.log('Error in saving configuration:', err);
